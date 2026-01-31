@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Капибарный лес</title>
+
+<style>
+body {
+  margin: 0;
+  background: #a0e7e5;
+  overflow: hidden;
+  font-family: Comic Sans MS, Arial, sans-serif;
+  text-align: center;
+}
+
+.hidden { display: none; }
+
+.container {
+  background: rgba(255,255,255,0.9);
+  margin: 40px auto;
+  padding: 25px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 420px;
+}
+
+button {
+  font-size: 18px;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  margin: 10px;
+}
+
+#yes {
+  background: #4CAF50;
+  color: white;
+  position: absolute;
+}
+
+#no {
+  background: #ff4444;
+  color: white;
+}
+
+input {
+  font-size: 18px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 2px solid #333;
+}
+
+/* Капибары */
+.capy {
+  position: absolute;
+}
+
+/* Конфетти */
+#confettiCanvas, #rainCanvas {
+  position: fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  z-index:9999;
+}
+
+/* Гроза */
+.darkCloud {
+  position: fixed;
+  inset: 0;
+  background: rgba(40,40,40,0.75);
+  z-index: 9980;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="confettiCanvas"></canvas>
+<canvas id="rainCanvas"></canvas>
+
+<!-- ЭКРАН С СЕКРЕТНЫМ СЛОВОМ -->
+<div class="container" id="codeScreen">
+  <h2>🦫 КАПИБАРСКИЙ ДОСТУП 🦫</h2>
+  <p>Введи секретное слово:</p>
+  <input id="code" placeholder="секретное слово">
+  <br><br>
+  <button onclick="checkCode()">Проверить</button>
+
+  <div style="margin-top:20px">
+    <iframe width="100%" height="200"
+      src="https://www.youtube.com/embed/QtXby3twMmI?start=63&autoplay=1&mute=0&rel=0"
+      allow="autoplay; encrypted-media"
+      allowfullscreen>
+    </iframe>
+  </div>
+</div>
+
+<!-- ИГРА -->
+<div class="container hidden" id="game">
+  <h2>Мы пойдём в парк аттракционов,<br>когда ты приедешь? 🎢</h2>
+  <button id="no" onclick="handleNo()">Нет</button>
+</div>
+
+<!-- ДИАЛОГ -->
+<div class="container hidden" id="dialog">
+  <h2 id="text"></h2>
+</div>
+
+<script>
+/* ================= TELEGRAM ================= */
+const TELEGRAM_TOKEN = "ВСТАВЬ_СЮДА_ТОКЕН";
+const TELEGRAM_CHAT_ID = "ВСТАВЬ_СЮДА_CHAT_ID";
+
+function sendTelegram(answer){
+  const text = encodeURIComponent(`🦫 Ответ: ${answer}`);
+  fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${text}`);
+}
+
+/* ================= ЛОГИКА ================= */
+const capybaras = [];
+const imgURL = "https://avatars.mds.yandex.net/i?id=5745b0fa705656973be995ade453dd20bbd64b8d-5288042-images-thumbs&n=13";
+
+function checkCode(){
+  if(document.getElementById("code").value.toLowerCase()==="душнила"){
+    document.getElementById("codeScreen").classList.add("hidden");
+    document.getElementById("game").classList.remove("hidden");
+    moveYes();
+    createCapybaras(40);
+    animateCapybaras();
+  } else alert("Неправильно 😈");
+}
+
+/* КНОПКА ДА */
+function moveYes(){
+  const yes=document.createElement("button");
+  yes.id="yes";
+  yes.innerText="ДА";
+  document.body.appendChild(yes);
+
+  let moves=0;
+  yes.style.top="50%";
+  yes.style.left="50%";
+
+  yes.onmouseover=()=>{
+    if(moves<2){
+      yes.style.top=Math.random()*70+"%";
+      yes.style.left=Math.random()*70+"%";
+      moves++;
+    }
+  };
+
+  yes.onclick=()=>{
+    sendTelegram("ДА ❤️");
+    document.getElementById("game").classList.add("hidden");
+    document.getElementById("dialog").classList.remove("hidden");
+    startYesChain(yes);
+  };
+}
+
+/* НЕТ */
+function handleNo(){
+  sendTelegram("НЕТ 😢");
+  document.getElementById("game").classList.add("hidden");
+  document.getElementById("dialog").classList.remove("hidden");
+
+  const text=document.getElementById("text");
+  const messages=[
+    "Нет 😢",
+    "ЧТОООО????",
+    "Ты хорошо подумал????",
+    "Нет, не принимается и точкаааааа"
+  ];
+
+  let i=0;
+  const timer=setInterval(()=>{
+    text.innerHTML+=messages[i]+"<br>";
+    i++;
+    if(i===messages.length){
+      clearInterval(timer);
+      startStorm();
+    }
+  },1200);
+}
+
+/* ЦЕПОЧКА ДА */
+function startYesChain(btn){
+  const msgs=["Точно? 🤨","Прям точно-точно?? 😳","УВЕРЕН??? 😈","УРААА 🎉 ХЕХЕ 🦫 Капибары празднуют"];
+  let i=0;
+  const t=setInterval(()=>{
+    btn.innerText=msgs[i];
+    if(i===msgs.length-1) runConfetti();
+    i++;
+    if(i>=msgs.length) clearInterval(t);
+  },1200);
+}
+
+/* КАПИБАРЫ */
+function createCapybaras(n){
+  for(let i=0;i<n;i++){
+    const c=document.createElement("img");
+    c.src=imgURL;
+    c.className="capy";
+    c.style.width=40+Math.random()*50+"px";
+    c.style.top=Math.random()*90+"vh";
+    c.style.left=Math.random()*90+"vw";
+    document.body.appendChild(c);
+    capybaras.push({el:c,dx:(Math.random()-0.5),dy:(Math.random()-0.5)});
+  }
+}
+
+function animateCapybaras(){
+  capybaras.forEach(c=>{
+    let t=parseFloat(c.el.style.top);
+    let l=parseFloat(c.el.style.left);
+    t+=c.dy; l+=c.dx;
+    if(t<0||t>90)c.dy*=-1;
+    if(l<0||l>90)c.dx*=-1;
+    c.el.style.top=t+"vh";
+    c.el.style.left=l+"vw";
+  });
+  requestAnimationFrame(animateCapybaras);
+}
+
+/* КОНФЕТТИ */
+const confettiCanvas=document.getElementById("confettiCanvas");
+const ctx=confettiCanvas.getContext("2d");
+confettiCanvas.width=innerWidth;
+confettiCanvas.height=innerHeight;
+const conf=[];
+
+function runConfetti(){
+  for(let i=0;i<250;i++){
+    conf.push({
+      x:Math.random()*innerWidth,
+      y:Math.random()*innerHeight,
+      s:Math.random()*6+4,
+      d:Math.random()*3+2,
+      c:`hsl(${Math.random()*360},100%,60%)`
+    });
+  }
+  (function anim(){
+    ctx.clearRect(0,0,innerWidth,innerHeight);
+    conf.forEach(p=>{
+      ctx.fillStyle=p.c;
+      ctx.fillRect(p.x,p.y,p.s,p.s);
+      p.y+=p.d;
+      if(p.y>innerHeight)p.y=0;
+    });
+    requestAnimationFrame(anim);
+  })();
+}
+
+/* ГРОЗА */
+const rainCanvas=document.getElementById("rainCanvas");
+const rctx=rainCanvas.getContext("2d");
+rainCanvas.width=innerWidth;
+rainCanvas.height=innerHeight;
+const drops=[];
+
+function startStorm(){
+  document.body.appendChild(Object.assign(document.createElement("div"),{className:"darkCloud"}));
+  for(let i=0;i<200;i++){
+    drops.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,l:10+Math.random()*20,s:4+Math.random()*4});
+  }
+  (function rain(){
+    rctx.clearRect(0,0,innerWidth,innerHeight);
+    rctx.strokeStyle="rgba(180,200,255,0.6)";
+    drops.forEach(d=>{
+      rctx.beginPath();
+      rctx.moveTo(d.x,d.y);
+      rctx.lineTo(d.x,d.y+d.l);
+      rctx.stroke();
+      d.y+=d.s;
+      if(d.y>innerHeight)d.y=0;
+    });
+    requestAnimationFrame(rain);
+  })();
+}
+</script>
+
+</body>
+</html>
